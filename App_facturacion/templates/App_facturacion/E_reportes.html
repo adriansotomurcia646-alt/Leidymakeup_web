@@ -1,0 +1,78 @@
+{% extends 'App_usuarios/E_base.html' %}
+
+{% block title %}Reportes - Leidy Make Up{% endblock %}
+
+{% block content %}
+<div>
+      <h2 class="text-2xl font-bold text-gray-900">Reportes y Estadísticas</h2>
+      <p class="text-xs text-gray-500">Métricas principales de rendimiento y servicios más solicitados.</p>
+    </div>
+
+    <!-- TARJETAS DE INGRESOS Y MÉTRICAS -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="bg-white border border-rose-100 p-5 rounded-2xl shadow-sm">
+        <p class="text-xs font-semibold text-gray-400">Ingresos recibidos</p>
+        <p class="text-2xl font-extrabold text-rose-600 mt-1">${{ total_ingresos }}</p>
+      </div>
+      <div class="bg-white border border-rose-100 p-5 rounded-2xl shadow-sm">
+        <p class="text-xs font-semibold text-gray-400">Servicio Más Solicitado</p>
+        <p class="text-xl font-bold text-gray-900 mt-1">{{ servicio_mas_popular.servicio__nombre|default:"Sin datos" }}</p>
+      </div>
+      <div class="bg-white border border-rose-100 p-5 rounded-2xl shadow-sm">
+        <p class="text-xs font-semibold text-gray-400">Total Citas Realizadas</p>
+        <p class="text-2xl font-extrabold text-gray-900 mt-1">{{ total_citas }}</p>
+      </div>
+    </div>
+
+    <section class="space-y-4 rounded-2xl border border-rose-100 bg-white p-6 shadow-sm">
+      <h3 class="text-sm font-bold text-gray-900">Consultar recaudación por fechas</h3>
+      <form method="get" class="grid grid-cols-1 items-end gap-4 sm:grid-cols-3">
+        <div>
+          <label for="fecha_inicio" class="mb-1 block text-xs font-semibold text-gray-700">Fecha inicial</label>
+          <input id="fecha_inicio" name="fecha_inicio" type="date" value="{{ fecha_inicio }}" class="w-full rounded-xl border border-rose-100 p-3 text-sm">
+        </div>
+        <div>
+          <label for="fecha_fin" class="mb-1 block text-xs font-semibold text-gray-700">Fecha final</label>
+          <input id="fecha_fin" name="fecha_fin" type="date" value="{{ fecha_fin }}" class="w-full rounded-xl border border-rose-100 p-3 text-sm">
+        </div>
+        <button type="submit" class="rounded-xl bg-rose-600 px-4 py-3 text-sm font-semibold text-white hover:bg-rose-700">Consultar</button>
+      </form>
+      {% if error_fechas %}
+        <p class="rounded-xl border border-rose-100 bg-rose-50 p-3 text-sm text-rose-700">{{ error_fechas }}</p>
+      {% elif total_periodo != None %}
+        <p class="text-xs text-gray-500">Total recibido del {{ fecha_inicio }} al {{ fecha_fin }}:</p>
+        <p class="text-xl font-bold text-rose-600">${{ total_periodo }}</p>
+      {% else %}
+        <p class="text-xs text-gray-500">Selecciona ambas fechas para consultar el total recibido durante el periodo.</p>
+      {% endif %}
+    </section>
+
+    <section class="space-y-4 rounded-2xl border border-rose-100 bg-white p-6 shadow-sm">
+      <h3 class="text-sm font-bold text-gray-900">Recaudación mensual</h3>
+      {% for mes in ingresos_mensuales %}
+        <div class="flex items-center justify-between border-b border-gray-50 py-3 text-sm last:border-0">
+          <span class="font-medium text-gray-700">{{ mes.mes|date:"F Y" }}</span>
+          <span class="font-bold text-rose-600">${{ mes.ingresos }}</span>
+        </div>
+      {% empty %}
+        <p class="text-sm text-gray-500">Aún no hay pagos registrados.</p>
+      {% endfor %}
+    </section>
+
+    <section class="space-y-4 rounded-2xl border border-rose-100 bg-white p-6 shadow-sm">
+      <h3 class="text-sm font-bold text-gray-900">Servicios más populares</h3>
+      {% for servicio in servicios_populares %}
+        <div>
+          <div class="mb-1 flex justify-between text-xs font-medium">
+            <span>{{ servicio.servicio__nombre }}</span>
+            <span class="font-bold text-rose-600">{{ servicio.total }} cita(s)</span>
+          </div>
+          <div class="h-2 w-full overflow-hidden rounded-full bg-rose-100">
+            <div class="h-full rounded-full bg-rose-600" style="width: {% widthratio servicio.total total_citas 100 %}%"></div>
+          </div>
+        </div>
+      {% empty %}
+        <p class="text-sm text-gray-500">Aún no hay citas para calcular estadísticas.</p>
+      {% endfor %}
+    </section>
+{% endblock %}

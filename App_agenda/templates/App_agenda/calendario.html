@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendario - Leidy Make Up</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background-color: #fdf2f8;
+            color: #4a1d2f;
+            padding: 30px;
+        }
+
+        .contenedor-calendario {
+            display: flex;
+            gap: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+            flex-wrap: wrap;
+        }
+
+        /* ===== Calendario ===== */
+        .calendario {
+            flex: 1;
+            min-width: 380px;
+            background: #fff;
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 4px 20px rgba(157, 36, 73, 0.08);
+        }
+
+        .calendario-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .calendario-header h2 {
+            color: #9d2449;
+            font-size: 1.3rem;
+        }
+
+        .calendario-header button {
+            background: #fdf2f8;
+            border: none;
+            color: #9d2449;
+            font-size: 1.2rem;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .calendario-header button:hover {
+            background: #f9d5e5;
+        }
+
+        .dias-semana {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.8rem;
+            color: #9d2449;
+            margin-bottom: 10px;
+        }
+
+        .dias-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 6px;
+        }
+
+        .dia {
+            aspect-ratio: 1 / 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: #4a1d2f;
+            position: relative;
+            transition: background 0.2s, color 0.2s;
+        }
+
+        .dia:hover {
+            background: #fdf2f8;
+        }
+
+        .dia.vacio {
+            cursor: default;
+        }
+
+        .dia.hoy {
+            font-weight: bold;
+            color: #9d2449;
+        }
+
+        .dia.seleccionado {
+            background: #9d2449;
+            color: #fff;
+            font-weight: bold;
+        }
+
+        .dia.con-citas::after {
+            content: '';
+            position: absolute;
+            bottom: 6px;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #9d2449;
+        }
+
+        .dia.seleccionado.con-citas::after {
+            background: #fff;
+        }
+
+        /* ===== Panel de citas ===== */
+        .panel-citas {
+            flex: 1;
+            min-width: 320px;
+            background: #fff;
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 4px 20px rgba(157, 36, 73, 0.08);
+        }
+
+        .panel-citas h3 {
+            color: #9d2449;
+            font-size: 1.1rem;
+            margin-bottom: 5px;
+        }
+
+        .panel-citas .subtitulo {
+            color: #a06b7d;
+            font-size: 0.85rem;
+            margin-bottom: 20px;
+        }
+
+        .sin-citas {
+            text-align: center;
+            color: #a06b7d;
+            padding: 40px 10px;
+        }
+
+        .sin-citas .icono {
+            font-size: 2.5rem;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        .lista-citas {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .cita {
+            background: #fdf2f8;
+            border-left: 4px solid #9d2449;
+            border-radius: 8px;
+            padding: 12px 15px;
+        }
+
+        .cita h4 {
+            color: #9d2449;
+            font-size: 0.95rem;
+            margin-bottom: 4px;
+        }
+
+        .cita p {
+            font-size: 0.82rem;
+            color: #6b3a4a;
+            margin: 2px 0;
+        }
+
+        .cita .estado {
+            display: inline-block;
+            margin-top: 6px;
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 20px;
+            background: #e6f4ea;
+            color: #1e7e34;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="contenedor-calendario">
+        <!-- Calendario -->
+        <div class="calendario">
+            <div class="calendario-header">
+                <button id="btnAnterior">‹</button>
+                <h2 id="tituloMes">Septiembre 2026</h2>
+                <button id="btnSiguiente">›</button>
+            </div>
+            <div class="dias-semana">
+                <div>LUN</div><div>MAR</div><div>MIÉ</div><div>JUE</div>
+                <div>VIE</div><div>SÁB</div><div>DOM</div>
+            </div>
+            <div class="dias-grid" id="diasGrid"></div>
+        </div>
+
+        <!-- Panel de citas -->
+        <div class="panel-citas">
+            <h3 id="tituloPanel">Selecciona un día</h3>
+            <p class="subtitulo" id="subtituloPanel">Haz clic en un día para ver las citas.</p>
+            <div id="contenidoCitas">
+                <div class="sin-citas">
+                    <span class="icono">📅</span>
+                    No hay día seleccionado.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===== Datos de ejemplo (simulan las citas del backend) =====
+        // Estructura: { 'YYYY-MM-DD': [ {hora, cliente, servicio, estado}, ... ] }
+        const citasPorFecha = {
+            '2026-09-21': [
+                { hora: '10:00 AM', cliente: 'Adrian Soto', servicio: 'Maquillaje social', estado: 'Confirmada' },
+                { hora: '02:00 PM', cliente: 'María Pérez', servicio: 'Keratina', estado: 'Confirmada' }
+            ],
+            '2026-09-23': [
+                { hora: '11:30 AM', cliente: 'Jonier Álvarez', servicio: 'Peinado', estado: 'Pendiente' }
+            ],
+            '2026-09-25': [
+                { hora: '05:30 PM', cliente: 'Diana Patricia', servicio: 'Maquillaje para eventos', estado: 'Pendiente' }
+            ],
+            '2026-09-28': [
+                { hora: '09:00 AM', cliente: 'Zharik Soto', servicio: 'Peinado para eventos', estado: 'Confirmada' },
+                { hora: '03:00 PM', cliente: 'Miguel Hernández', servicio: 'Maquillaje social', estado: 'Confirmada' },
+                { hora: '04:30 PM', cliente: 'Angel Gómez', servicio: 'Keratina', estado: 'Confirmada' }
+            ]
+        };
+
+        // ===== Estado =====
+        let fechaActual = new Date(2026, 8, 1); // Septiembre 2026 (mes 8 = sept)
+        let fechaSeleccionada = null;
+
+        const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+                       'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+        const diasSemana = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+
+        // ===== Elementos del DOM =====
+        const tituloMes = document.getElementById('tituloMes');
+        const diasGrid = document.getElementById('diasGrid');
+        const tituloPanel = document.getElementById('tituloPanel');
+        const subtituloPanel = document.getElementById('subtituloPanel');
+        const contenidoCitas = document.getElementById('contenidoCitas');
+
+        // ===== Funciones auxiliares =====
+        function formatearFecha(date) {
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
+        function obtenerCitas(fecha) {
+            return citasPorFecha[fecha] || [];
+        }
+
+        // ===== Renderizar calendario =====
+        function renderizarCalendario() {
+            const año = fechaActual.getFullYear();
+            const mes = fechaActual.getMonth();
+
+            tituloMes.textContent = `${meses[mes]} ${año}`;
+            diasGrid.innerHTML = '';
+
+            // Primer día del mes (0=domingo, 1=lunes...)
+            const primerDia = new Date(año, mes, 1).getDay();
+            // Ajustar para que lunes sea el primer día (0=lunes, 6=domingo)
+            const offset = (primerDia === 0) ? 6 : primerDia - 1;
+
+            // Días del mes
+            const diasEnMes = new Date(año, mes + 1, 0).getDate();
+
+            // Días vacíos al inicio
+            for (let i = 0; i < offset; i++) {
+                const div = document.createElement('div');
+                div.classList.add('dia', 'vacio');
+                diasGrid.appendChild(div);
+            }
+
+            // Días del mes
+            for (let d = 1; d <= diasEnMes; d++) {
+                const fecha = new Date(año, mes, d);
+                const fechaStr = formatearFecha(fecha);
+                const citas = obtenerCitas(fechaStr);
+
+                const div = document.createElement('div');
+                div.classList.add('dia');
+                div.textContent = d;
+
+                if (citas.length > 0) {
+                    div.classList.add('con-citas');
+                }
+
+                if (fechaSeleccionada === fechaStr) {
+                    div.classList.add('seleccionado');
+                }
+
+                div.addEventListener('click', () => seleccionarDia(fechaStr, fecha));
+                diasGrid.appendChild(div);
+            }
+        }
+
+        // ===== Seleccionar un día =====
+        function seleccionarDia(fechaStr, fechaObj) {
+            fechaSeleccionada = fechaStr;
+            renderizarCalendario();
+            mostrarCitas(fechaStr, fechaObj);
+        }
+
+        // ===== Mostrar citas del día seleccionado =====
+        function mostrarCitas(fechaStr, fechaObj) {
+            const citas = obtenerCitas(fechaStr);
+            const diaSemana = diasSemana[fechaObj.getDay()];
+            const mes = meses[fechaObj.getMonth()];
+            const dia = fechaObj.getDate();
+            const año = fechaObj.getFullYear();
+
+            tituloPanel.textContent = `${diaSemana}, ${dia} de ${mes} de ${año}`;
+            subtituloPanel.textContent = `${citas.length} cita(s) agendada(s)`;
+
+            if (citas.length === 0) {
+                contenidoCitas.innerHTML = `
+                    <div class="sin-citas">
+                        <span class="icono">📭</span>
+                        No hay citas este día.
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '<div class="lista-citas">';
+            citas.forEach(c => {
+                html += `
+                    <div class="cita">
+                        <h4>${c.servicio}</h4>
+                        <p>👤 ${c.cliente}</p>
+                        <p>🕐 ${c.hora}</p>
+                        <span class="estado">${c.estado}</span>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            contenidoCitas.innerHTML = html;
+        }
+
+        // ===== Navegación entre meses =====
+        document.getElementById('btnAnterior').addEventListener('click', () => {
+            fechaActual.setMonth(fechaActual.getMonth() - 1);
+            renderizarCalendario();
+        });
+
+        document.getElementById('btnSiguiente').addEventListener('click', () => {
+            fechaActual.setMonth(fechaActual.getMonth() + 1);
+            renderizarCalendario();
+        });
+
+        // ===== Inicializar =====
+        renderizarCalendario();
+    </script>
+
+</body>
+</html>

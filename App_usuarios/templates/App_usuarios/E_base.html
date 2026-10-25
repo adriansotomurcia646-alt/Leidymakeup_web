@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Leidy Make Up - Estilista{% endblock %}</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-[#fdf2f8] font-sans text-gray-800 antialiased">
+
+<div class="flex min-h-screen bg-[#fdf2f8]">
+    
+    <!-- BARRA LATERAL (SIDEBAR ESTILISTA) -->
+    <aside class="w-64 bg-white border-r border-gray-100 flex flex-col justify-between shrink-0 min-h-screen">
+        <div>
+            <!-- Logo -->
+            <div class="p-6 flex items-center gap-3">
+                <div class="bg-[#d6336c] text-white p-2 rounded-xl shadow-md shadow-pink-200">
+                    <i data-lucide="sparkles" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-gray-800 leading-tight text-sm">Leidy Make Up</h1>
+                    <p class="text-xs text-gray-400">Estilista</p>
+                </div>
+            </div>
+
+            <!-- Nombre de Usuario -->
+            <div class="px-6 pb-4">
+                <p class="text-sm font-semibold text-gray-700">
+                    {{ request.user.get_full_name|default:request.user.username }}
+                </p>
+            </div>
+
+            <!-- Menú de Navegación -->
+            <nav class="px-4 space-y-1">
+                <a href="{% url 'App_agenda:e_inicio' %}" class="flex items-center gap-3 px-4 py-2.5 {% if request.resolver_match.url_name == 'e_inicio' %}bg-[#d6336c] text-white shadow-sm shadow-pink-200{% else %}text-gray-600 hover:bg-gray-50{% endif %} rounded-xl font-medium transition-colors text-xs">
+                    <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                    Inicio
+                </a>
+                <a href="{% url 'App_agenda:e_solicitudes' %}" class="flex items-center gap-3 px-4 py-2.5 {% if request.resolver_match.url_name == 'e_solicitudes' or request.resolver_match.url_name == 'actualizar_solicitud' %}bg-[#d6336c] text-white shadow-sm shadow-pink-200{% else %}text-gray-600 hover:bg-gray-50{% endif %} rounded-xl transition-colors text-xs font-medium">
+                    <i data-lucide="inbox" class="w-4 h-4"></i>
+                    Solicitudes
+                </a>
+                <a href="{% url 'App_agenda:e_calendario' %}" class="flex items-center gap-3 px-4 py-2.5 {% if request.resolver_match.url_name == 'e_calendario' %}bg-[#d6336c] text-white shadow-sm shadow-pink-200{% else %}text-gray-600 hover:bg-gray-50{% endif %} rounded-xl transition-colors text-xs font-medium">
+                    <i data-lucide="calendar" class="w-4 h-4"></i>
+                    Calendario
+                </a>
+                <a href="{% url 'App_agenda:e_clientes' %}" class="flex items-center gap-3 px-4 py-2.5 {% if request.resolver_match.url_name == 'e_clientes' %}bg-[#d6336c] text-white shadow-sm shadow-pink-200{% else %}text-gray-600 hover:bg-gray-50{% endif %} rounded-xl transition-colors text-xs font-medium">
+                    <i data-lucide="users" class="w-4 h-4"></i>
+                    Clientes
+                </a>
+                <a href="{% url 'App_agenda:e_mensajes' %}" class="flex items-center gap-3 px-4 py-2.5 {% if request.resolver_match.url_name == 'e_mensajes' %}bg-[#d6336c] text-white shadow-sm shadow-pink-200{% else %}text-gray-600 hover:bg-gray-50{% endif %} rounded-xl transition-colors text-xs font-medium">
+                    <i data-lucide="message-square" class="w-4 h-4"></i>
+                    Mensajes
+                </a>
+                <a href="{% url 'App_servicios:lista' %}" class="flex items-center gap-3 px-4 py-2.5 {% if request.resolver_match.url_name == 'lista' or request.resolver_match.url_name == 'crear' or request.resolver_match.url_name == 'editar' or request.resolver_match.url_name == 'eliminar' %}bg-[#d6336c] text-white shadow-sm shadow-pink-200{% else %}text-gray-600 hover:bg-gray-50{% endif %} rounded-xl transition-colors text-xs font-medium">
+                    <i data-lucide="scissors" class="w-4 h-4"></i>
+                    Servicios
+                </a>
+                <a href="{% url 'App_facturacion:reportes' %}" class="flex items-center gap-3 px-4 py-2.5 {% if request.resolver_match.url_name == 'reportes' %}bg-[#d6336c] text-white shadow-sm shadow-pink-200{% else %}text-gray-600 hover:bg-gray-50{% endif %} rounded-xl transition-colors text-xs font-medium">
+                    <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+                    Reportes
+                </a>
+                <a href="{% url 'App_usuarios:configuracion' %}" class="flex items-center gap-3 px-4 py-2.5 {% if request.resolver_match.url_name == 'configuracion' %}bg-[#d6336c] text-white shadow-sm shadow-pink-200{% else %}text-gray-600 hover:bg-gray-50{% endif %} rounded-xl transition-colors text-xs font-medium">
+                    <i data-lucide="settings" class="w-4 h-4"></i>
+                    Configuración
+                </a>
+            </nav>
+        </div>
+
+        <!-- Cerrar Sesión -->
+        <div class="p-4 border-t border-gray-100 mt-auto">
+            <form method="post" action="{% url 'App_usuarios:logout' %}">
+                {% csrf_token %}
+                <button type="submit" class="flex items-center gap-2 text-xs font-medium text-gray-500 hover:text-gray-800 px-4 py-2">
+                    <i data-lucide="log-out" class="w-4 h-4"></i>
+                    Cerrar sesión
+                </button>
+            </form>
+        </div>
+    </aside>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <main class="flex-1 p-8 md:p-12 overflow-y-auto">
+        {% if messages %}
+            <div class="mx-auto mb-6 max-w-6xl space-y-2">
+                {% for message in messages %}
+                    <p class="rounded-xl border border-rose-100 bg-white px-4 py-3 text-sm text-gray-700">{{ message }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+        {% block content %}
+        {% endblock %}
+    </main>
+
+</div>
+
+<script>
+    lucide.createIcons();
+</script>
+</body>
+</html>

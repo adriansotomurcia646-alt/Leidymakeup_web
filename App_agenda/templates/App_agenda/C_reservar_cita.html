@@ -1,0 +1,496 @@
+{% extends 'App_usuarios/C_base.html' %}
+
+{% block title %}Reservar cita - Leidy Make Up{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-8 pb-12">
+
+  <!-- CABECERA -->
+  <div class="text-left">
+    <h1 class="text-2xl font-bold text-gray-900">Reservar cita</h1>
+    <p class="text-xs text-gray-400 mt-1">Completa los pasos para solicitar tu cita.</p>
+  </div>
+
+  <!-- INDICADOR DE PASOS (STEPPER) -->
+  <div class="flex items-center justify-center max-w-sm mx-auto my-6 relative">
+    <div class="absolute top-1/2 left-0 right-0 h-0.5 bg-rose-100 -z-10 transform -translate-y-1/2"></div>
+    
+    <div class="flex justify-between w-full">
+      <div id="step-dot-1" class="w-8 h-8 rounded-full bg-rose-600 text-white flex items-center justify-center text-xs font-bold transition-all shadow-md shadow-rose-200">1</div>
+      <div id="step-dot-2" class="w-8 h-8 rounded-full bg-rose-100 text-rose-400 flex items-center justify-center text-xs font-bold transition-all">2</div>
+      <div id="step-dot-3" class="w-8 h-8 rounded-full bg-rose-100 text-rose-400 flex items-center justify-center text-xs font-bold transition-all">3</div>
+    </div>
+  </div>
+
+  <form id="form-reserva" method="post" enctype="multipart/form-data" action="{% url 'App_agenda:reservar_cita' %}">
+    {% csrf_token %}
+
+    {% if error or form.errors %}
+    <div role="alert" class="mb-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-700">
+      {{ error|default:"Revisa los datos de tu solicitud." }}
+      {% if form.errors %}
+        <ul class="mt-2 list-disc pl-4">
+          {% for field in form %}
+            {% for field_error in field.errors %}<li>{{ field_error }}</li>{% endfor %}
+          {% endfor %}
+          {% for field_error in form.non_field_errors %}<li>{{ field_error }}</li>{% endfor %}
+        </ul>
+      {% endif %}
+    </div>
+    {% endif %}
+    
+    <!-- CAMPOS OCULTOS PARA ALMACENAR SELECCIONES -->
+    <input type="hidden" id="input_servicio_id" name="servicio_id" value="{{ form.data.servicio_id|default:'' }}" required>
+    <input type="hidden" id="input_servicio_nombre" name="servicio_nombre">
+    <input type="hidden" id="input_servicio_precio" name="servicio_precio">
+    <input type="hidden" id="input_servicio_duracion" name="servicio_duracion">
+    <input type="hidden" id="input_fecha" name="fecha" value="{{ form.data.fecha|default:hoy }}">
+    <input type="hidden" id="input_hora" name="hora" value="{{ form.data.hora|default:'' }}" required>
+
+    <!-- ==================== PASO 1: SELECCIONAR SERVICIO ==================== -->
+    <div id="step-1" class="space-y-4">
+      <h2 class="text-sm font-bold text-gray-800 flex items-center gap-2">
+        <i data-lucide="sparkles" class="w-4 h-4 text-rose-500"></i> Selecciona el servicio
+      </h2>
+
+      <div class="space-y-3">
+        {% for servicio in servicios %}
+        <div data-service-id="{{ servicio.id }}"
+             data-service-name="{{ servicio.nombre }}"
+             data-service-price="{{ servicio.precio }}"
+             data-service-duration="{{ servicio.duracion }}"
+             class="card-servicio bg-white rounded-2xl p-5 border border-rose-100 shadow-sm hover:border-rose-400 cursor-pointer transition-all flex items-center justify-between">
+          <div>
+            <h3 class="text-sm font-bold text-gray-900">{{ servicio.nombre }}</h3>
+            <p class="text-xs text-gray-400 mt-0.5">{{ servicio.categoria|default:"Servicio profesional" }}</p>
+          </div>
+          <div class="text-right">
+            <span class="text-sm font-bold text-rose-600 block">${{ servicio.precio }}</span>
+            <span class="text-[11px] text-gray-400">{{ servicio.duracion }} min</span>
+          </div>
+        </div>
+        {% empty %}
+        <p class="text-xs text-gray-400">No hay servicios disponibles para reservar en este momento.</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- ==================== PASO 2: DÍA Y HORA ==================== -->
+    <div id="step-2" class="space-y-6 hidden">
+      <div>
+        <h2 class="text-sm font-bold text-gray-800 flex items-center gap-2">
+          <i data-lucide="calendar" class="w-4 h-4 text-rose-500"></i> Selecciona día y hora
+        </h2>
+        <p id="servicio-resumen-paso2" class="text-xs text-gray-400 mt-1 flex items-center gap-1.5">
+          <i data-lucide="tag" class="w-3.5 h-3.5 text-rose-500"></i> <span id="resumen-paso2-texto">Selecciona un servicio</span>
+        </p>
+      </div>
+
+      <!-- CALENDARIO VISUAL -->
+      <div class="bg-white rounded-3xl p-6 border border-rose-100 shadow-sm max-w-md mx-auto">
+        <div class="flex items-center justify-between mb-4">
+          <button id="mes-anterior" type="button" aria-label="Mes anterior" class="text-gray-400 hover:text-gray-600"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
+          <span id="mes-calendario" class="text-sm font-bold text-gray-800"></span>
+          <button id="mes-siguiente" type="button" aria-label="Mes siguiente" class="text-gray-400 hover:text-gray-600"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+        </div>
+
+        <div class="grid grid-cols-7 text-center text-[10px] font-bold text-gray-400 mb-2">
+          <span>LUN</span><span>MAR</span><span>MIÉ</span><span>JUE</span><span>VIE</span><span>SÁB</span><span>DOM</span>
+        </div>
+
+        <div id="dias-calendario" class="grid grid-cols-7 text-center gap-1 text-xs text-gray-700"></div>
+      </div>
+
+      <!-- GRID DE HORARIOS DISPONIBLES -->
+      <div class="space-y-3">
+        <h3 class="text-xs font-semibold text-gray-600 flex items-center gap-1.5">
+          <i data-lucide="clock" class="w-3.5 h-3.5 text-rose-500"></i> <span id="titulo-horarios">Selecciona un día para consultar los horarios</span>
+        </h3>
+
+        <div id="lista-horarios" class="grid grid-cols-3 gap-3"></div>
+        <p id="estado-horarios" class="text-xs text-gray-400" aria-live="polite"></p>
+      </div>
+
+      <!-- NAVEGACIÓN PASO 2 -->
+      <div class="flex items-center justify-between pt-4">
+        <button id="volver-servicio" type="button" class="px-5 py-2.5 bg-white border border-gray-200 text-gray-600 rounded-xl text-xs font-semibold hover:bg-gray-50 transition-all flex items-center gap-1.5">
+          <i data-lucide="chevron-left" class="w-4 h-4"></i> Atrás
+        </button>
+        <button id="continuar-reserva" type="button" class="px-6 py-2.5 bg-rose-600 text-white rounded-xl text-xs font-bold hover:bg-rose-700 transition-all shadow-md shadow-rose-200 flex items-center gap-1.5">
+          Continuar <i data-lucide="chevron-right" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- ==================== PASO 3: DETALLES Y CONFIRMACIÓN ==================== -->
+    <div id="step-3" class="space-y-6 hidden">
+      <h2 class="text-sm font-bold text-gray-800">Información de tu reserva</h2>
+
+      <!-- RESUMEN DE RESERVA -->
+      <div class="bg-white rounded-2xl p-6 border border-rose-100 shadow-sm space-y-3 text-xs">
+        <div class="flex justify-between py-1 border-b border-gray-50">
+          <span class="text-gray-400">Nombre</span>
+          <span class="font-bold text-gray-800">{{ request.user.get_full_name|default:request.user.username }}</span>
+        </div>
+        <div class="flex justify-between py-1 border-b border-gray-50">
+          <span class="text-gray-400">Teléfono</span>
+          <span class="font-bold text-gray-800">3241002784</span>
+        </div>
+        <div class="flex justify-between py-1 border-b border-gray-50">
+          <span class="text-gray-400">Servicio</span>
+          <span id="confirm-servicio" class="font-bold text-gray-800">Sin seleccionar</span>
+        </div>
+        <div class="flex justify-between py-1 border-b border-gray-50">
+          <span class="text-gray-400">Fecha</span>
+          <span id="confirm-fecha" class="font-bold text-gray-800">Selecciona una fecha</span>
+        </div>
+        <div class="flex justify-between py-1">
+          <span class="text-gray-400">Hora</span>
+          <span id="confirm-hora" class="font-bold text-gray-800">Selecciona una hora</span>
+        </div>
+      </div>
+
+      <!-- MENSAJE / DESCRIPCIÓN -->
+      <div>
+        <label class="block text-xs font-semibold text-gray-700 mb-1.5">Mensaje / Descripción</label>
+        <textarea name="mensaje" rows="3" placeholder="Cuéntale a la estilista qué deseas realizarte..." class="w-full p-4 rounded-2xl border border-gray-200 text-xs focus:outline-none focus:border-rose-500 bg-white shadow-sm">{{ form.data.mensaje|default:'' }}</textarea>
+      </div>
+
+      <!-- ADJUNTAR IMÁGENES, PDF O VIDEOS -->
+      <div>
+        <label class="block text-xs font-semibold text-gray-700 mb-1.5">Archivos de referencia</label>
+        <div class="border-2 border-dashed border-rose-200 rounded-2xl p-8 text-center bg-rose-50/20 hover:bg-rose-50/40 transition-all cursor-pointer relative">
+          <input type="file" name="adjuntos" multiple accept=".jpg,.jpeg,.png,.webp,.pdf,.mp4,.webm,image/jpeg,image/png,image/webp,application/pdf,video/mp4,video/webm" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+          <div class="w-10 h-10 rounded-xl bg-rose-100 text-rose-500 flex items-center justify-center mx-auto mb-2">
+            <i data-lucide="upload" class="w-5 h-5"></i>
+          </div>
+          <p class="text-xs font-semibold text-gray-700">Enviar imágenes, PDFs o videos de referencia</p>
+          <p class="text-[10px] text-gray-400 mt-1">JPG, JPEG, PNG, WEBP, PDF, MP4, WEBM</p>
+        </div>
+      </div>
+
+      <!-- NAVEGACIÓN PASO 3 -->
+      <div class="flex items-center justify-between pt-4">
+        <button id="volver-calendario" type="button" class="px-5 py-2.5 bg-white border border-gray-200 text-gray-600 rounded-xl text-xs font-semibold hover:bg-gray-50 transition-all flex items-center gap-1.5">
+          <i data-lucide="chevron-left" class="w-4 h-4"></i> Atrás
+        </button>
+        <button type="submit" class="px-6 py-2.5 bg-rose-600 text-white rounded-xl text-xs font-bold hover:bg-rose-700 transition-all shadow-md shadow-rose-200 flex items-center gap-2">
+          <i data-lucide="send" class="w-4 h-4"></i> Enviar solicitud
+        </button>
+      </div>
+    </div>
+
+  </form>
+
+</div>
+
+<script>
+(() => {
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+  const todayIso = "{{ hoy|escapejs }}";
+  const availabilityUrl = "{% url 'App_agenda:horarios_disponibles' %}";
+  const monthNames = new Intl.DateTimeFormat('es-CO', { month: 'long', year: 'numeric' });
+  let selectedMonth;
+  let availabilityRequest = 0;
+  const requiredElements = [
+    'step-1',
+    'step-2',
+    'step-3',
+    'step-dot-1',
+    'step-dot-2',
+    'step-dot-3',
+    'continuar-reserva',
+    'volver-servicio',
+    'volver-calendario',
+    'input_servicio_id',
+    'input_fecha',
+    'input_hora',
+    'dias-calendario',
+    'mes-calendario',
+    'mes-anterior',
+    'mes-siguiente',
+    'titulo-horarios',
+    'lista-horarios',
+    'estado-horarios',
+    'resumen-paso2-texto',
+    'confirm-servicio',
+    'confirm-fecha',
+    'confirm-hora'
+  ];
+  const missingElements = requiredElements.filter(id => !document.getElementById(id));
+  if (missingElements.length) {
+    console.error('No se pudo inicializar el calendario; faltan elementos:', missingElements);
+    return;
+  }
+
+  function dateFromIso(value) {
+    const [year, month, day] = value.split('-').map(Number);
+    const parsed = new Date(year, month - 1, day);
+    parsed.setHours(0, 0, 0, 0);
+    if (
+      parsed.getFullYear() !== year ||
+      parsed.getMonth() !== month - 1 ||
+      parsed.getDate() !== day
+    ) {
+      return null;
+    }
+    return parsed;
+  }
+
+  function toIsoDate(value) {
+    return [
+      value.getFullYear(),
+      String(value.getMonth() + 1).padStart(2, '0'),
+      String(value.getDate()).padStart(2, '0')
+    ].join('-');
+  }
+
+  function formatDate(value, options) {
+    return new Intl.DateTimeFormat('es-CO', options).format(dateFromIso(value));
+  }
+
+  function goToStep(step) {
+    for (let index = 1; index <= 3; index++) {
+      document.getElementById(`step-${index}`).classList.toggle('hidden', index !== step);
+      const dot = document.getElementById(`step-dot-${index}`);
+      dot.className = index <= step
+        ? "w-8 h-8 rounded-full bg-rose-600 text-white flex items-center justify-center text-xs font-bold transition-all shadow-md shadow-rose-200"
+        : "w-8 h-8 rounded-full bg-rose-100 text-rose-400 flex items-center justify-center text-xs font-bold transition-all";
+    }
+  }
+
+  function clearTime() {
+    document.getElementById('input_hora').value = '';
+    document.getElementById('confirm-hora').innerText = 'Selecciona una hora';
+  }
+
+  function renderCalendar() {
+    const container = document.getElementById('dias-calendario');
+    const dateInput = document.getElementById('input_fecha');
+    const monthLabel = document.getElementById('mes-calendario');
+    const previousMonthButton = document.getElementById('mes-anterior');
+    const year = selectedMonth.getFullYear();
+    const month = selectedMonth.getMonth();
+    const selectedDate = dateInput.value;
+    const firstWeekday = (new Date(year, month, 1).getDay() + 6) % 7;
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const firstDayOfCurrentMonth = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+
+    monthLabel.innerText = monthNames.format(selectedMonth);
+    const previousMonthDisabled = selectedMonth.getFullYear() < firstDayOfCurrentMonth.getFullYear() ||
+      (selectedMonth.getFullYear() === firstDayOfCurrentMonth.getFullYear() &&
+       selectedMonth.getMonth() <= firstDayOfCurrentMonth.getMonth());
+    previousMonthButton.disabled = previousMonthDisabled;
+    previousMonthButton.classList.toggle('opacity-40', previousMonthDisabled);
+    container.replaceChildren();
+
+    for (let blank = 0; blank < firstWeekday; blank++) {
+      const empty = document.createElement('span');
+      empty.className = 'py-2';
+      container.append(empty);
+    }
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dayDate = new Date(year, month, day);
+      dayDate.setHours(0, 0, 0, 0);
+      const isoDate = toIsoDate(dayDate);
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.innerText = day;
+      button.className = 'py-2 rounded-2xl transition-all';
+      if (dayDate < hoy) {
+        button.disabled = true;
+        button.classList.add('text-gray-300', 'cursor-not-allowed');
+        button.setAttribute('aria-label', `${day}, fecha no disponible`);
+      } else {
+        button.classList.add('hover:bg-rose-50', 'cursor-pointer');
+        button.setAttribute('aria-label', formatDate(isoDate, {
+          weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+        }));
+        if (isoDate === selectedDate) {
+          button.classList.add('bg-rose-600', 'text-white', 'font-bold', 'shadow-sm', 'shadow-rose-200');
+        }
+        button.addEventListener('click', () => selectDate(isoDate));
+      }
+      container.append(button);
+    }
+  }
+
+  async function loadAvailability() {
+    const requestId = ++availabilityRequest;
+    const serviceId = document.getElementById('input_servicio_id').value;
+    const selectedDate = document.getElementById('input_fecha').value;
+    const slots = document.getElementById('lista-horarios');
+    const status = document.getElementById('estado-horarios');
+    const timeInput = document.getElementById('input_hora');
+    slots.replaceChildren();
+    clearTime();
+    document.getElementById('titulo-horarios').innerText = selectedDate
+      ? `Horarios disponibles · ${formatDate(selectedDate, {
+          weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+        })}`
+      : 'Selecciona un día para consultar los horarios';
+
+    if (!serviceId || !selectedDate) {
+      status.innerText = 'Selecciona un servicio y una fecha para consultar disponibilidad.';
+      return;
+    }
+
+    status.innerText = 'Consultando horarios...';
+    const params = new URLSearchParams({ fecha: selectedDate, servicio_id: serviceId });
+    try {
+      const response = await fetch(`${availabilityUrl}?${params}`);
+      const data = await response.json();
+      if (requestId !== availabilityRequest) {
+        return;
+      }
+      if (!response.ok) {
+        throw new Error(data.error || 'No se pudieron consultar los horarios.');
+      }
+      data.horarios.forEach(horario => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.dataset.time = horario.value;
+        button.innerText = horario.display;
+        button.className = 'btn-time py-2.5 bg-white border border-rose-100 rounded-xl text-xs font-medium text-gray-700 hover:border-rose-400 transition-all';
+        button.addEventListener('click', () => selectTime(horario.value, horario.display, button));
+        slots.append(button);
+        if (horario.value === timeInput.dataset.previous) {
+          selectTime(horario.value, horario.display, button);
+        }
+      });
+      status.innerText = data.horarios.length
+        ? ''
+        : 'No hay horarios disponibles para esta fecha y servicio.';
+    } catch (error) {
+      if (requestId === availabilityRequest) {
+        status.innerText = error.message;
+      }
+    }
+  }
+
+  function selectDate(value) {
+    document.getElementById('input_fecha').value = value;
+    document.getElementById('confirm-fecha').innerText = formatDate(value, {
+      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+    });
+    renderCalendar();
+    loadAvailability();
+  }
+
+  function selectTime(value, display, element) {
+    document.querySelectorAll('.btn-time').forEach(button => {
+      button.className = 'btn-time py-2.5 bg-white border border-rose-100 rounded-xl text-xs font-medium text-gray-700 hover:border-rose-400 transition-all';
+    });
+    element.className = 'btn-time py-2.5 bg-rose-600 text-white rounded-xl text-xs font-bold transition-all shadow-sm shadow-rose-200';
+    document.getElementById('input_hora').value = value;
+    document.getElementById('confirm-hora').innerText = display;
+  }
+
+  function selectService(card, moveToCalendar = true) {
+    document.querySelectorAll('.card-servicio').forEach(item => {
+      item.classList.remove('border-rose-500', 'bg-rose-50/30');
+    });
+    card.classList.add('border-rose-500', 'bg-rose-50/30');
+    document.getElementById('input_servicio_id').value = card.dataset.serviceId;
+    document.getElementById('input_servicio_nombre').value = card.dataset.serviceName;
+    document.getElementById('input_servicio_precio').value = card.dataset.servicePrice;
+    document.getElementById('input_servicio_duracion').value = card.dataset.serviceDuration;
+    document.getElementById('resumen-paso2-texto').innerText =
+      `${card.dataset.serviceName} · ${card.dataset.serviceDuration} min referencial`;
+    document.getElementById('confirm-servicio').innerText = card.dataset.serviceName;
+    document.getElementById('input_hora').dataset.previous = '';
+    loadAvailability();
+    if (moveToCalendar) {
+      setTimeout(() => goToStep(2), 200);
+    }
+  }
+
+  function validateAndGoToStep3() {
+    const serviceId = document.getElementById('input_servicio_id').value;
+    const selectedDate = document.getElementById('input_fecha').value;
+    const selectedTime = document.getElementById('input_hora').value;
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const selectedDateValue = /^\d{4}-\d{2}-\d{2}$/.test(selectedDate)
+      ? dateFromIso(selectedDate)
+      : null;
+
+    const selectedServiceExists = [...document.querySelectorAll('.card-servicio')]
+      .some(card => card.dataset.serviceId === serviceId);
+    if (!serviceId || !selectedServiceExists) {
+      alert('Por favor selecciona un servicio en el paso 1.');
+      goToStep(1);
+      return;
+    }
+    if (!selectedDateValue || selectedDateValue < now) {
+      alert('Selecciona una fecha válida de hoy o futura.');
+      return;
+    }
+    if (!/^\d{2}:\d{2}$/.test(selectedTime) ||
+        !document.querySelector(`.btn-time[data-time="${selectedTime}"]`)) {
+      alert('Selecciona un horario disponible.');
+      return;
+    }
+    if (selectedDate === todayIso) {
+      const [hours, minutes] = selectedTime.split(':').map(Number);
+      const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes();
+      if (hours * 60 + minutes <= nowMinutes) {
+        alert('La hora seleccionada ya pasó. Elige un horario futuro.');
+        return;
+      }
+    }
+    goToStep(3);
+  }
+
+  document.querySelectorAll('.card-servicio').forEach(card => {
+    card.addEventListener('click', () => selectService(card));
+  });
+  document.getElementById('mes-anterior').addEventListener('click', () => {
+    selectedMonth = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() - 1, 1, 12);
+    renderCalendar();
+  });
+  document.getElementById('mes-siguiente').addEventListener('click', () => {
+    selectedMonth = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 1, 12);
+    renderCalendar();
+  });
+  document.getElementById('continuar-reserva').addEventListener(
+    'click',
+    validateAndGoToStep3
+  );
+  document.getElementById('volver-servicio').addEventListener('click', () => goToStep(1));
+  document.getElementById('volver-calendario').addEventListener('click', () => goToStep(2));
+
+  const dateInput = document.getElementById('input_fecha');
+  const timeInput = document.getElementById('input_hora');
+  const postedTime = timeInput.value;
+  timeInput.dataset.previous = postedTime;
+  const requestedDate = dateInput.value;
+  const parsedRequestedDate = /^\d{4}-\d{2}-\d{2}$/.test(requestedDate)
+    ? dateFromIso(requestedDate)
+    : null;
+  const dateIsValid = parsedRequestedDate && parsedRequestedDate >= hoy;
+  const selectedDate = dateIsValid
+    ? requestedDate
+    : (dateFromIso(todayIso) ? todayIso : toIsoDate(hoy));
+  dateInput.value = selectedDate;
+  document.getElementById('confirm-fecha').innerText = formatDate(selectedDate, {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+  });
+  selectedMonth = dateFromIso(selectedDate) || new Date(hoy);
+  selectedMonth.setDate(1);
+  renderCalendar();
+
+  const postedService = document.getElementById('input_servicio_id').value;
+  const selectedCard = [...document.querySelectorAll('.card-servicio')]
+    .find(card => card.dataset.serviceId === postedService);
+  if (selectedCard) {
+    selectService(selectedCard, false);
+  } else {
+    loadAvailability();
+  }
+  goToStep(Number('{{ paso_actual|default:1 }}'));
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,438 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Servicios - Leidy Make Up</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background-color: #fdf2f8;
+            color: #4a1d2f;
+            min-height: 100vh;
+            display: flex;
+        }
+
+        /* ===== SIDEBAR ===== */
+        .sidebar {
+            width: 260px;
+            min-height: 100vh;
+            background: #fff;
+            padding: 24px 18px;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #f3d1de;
+            flex-shrink: 0;
+        }
+
+        .sidebar-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 28px;
+        }
+
+        .sidebar-logo .logo-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            background: #9d2449;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .sidebar-logo .logo-icon svg {
+            width: 22px;
+            height: 22px;
+            fill: #fff;
+        }
+
+        .sidebar-logo .logo-text h3 {
+            font-size: 0.95rem;
+            color: #9d2449;
+            font-weight: 700;
+        }
+
+        .sidebar-logo .logo-text p {
+            font-size: 0.75rem;
+            color: #a06b7d;
+        }
+
+        .usuario-info {
+            font-size: 0.82rem;
+            color: #a06b7d;
+            margin-bottom: 22px;
+            padding-left: 4px;
+        }
+
+        .menu {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex-grow: 1;
+        }
+
+        .menu li a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 11px 14px;
+            border-radius: 10px;
+            text-decoration: none;
+            color: #6b3a4a;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .menu li a:hover {
+            background: #fdf2f8;
+            color: #9d2449;
+        }
+
+        .menu li a.activo {
+            background: #9d2449;
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .menu li a svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+            flex-shrink: 0;
+        }
+
+        .cerrar-sesion {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 11px 14px;
+            color: #9d2449;
+            text-decoration: none;
+            font-size: 0.88rem;
+            font-weight: 600;
+            border-top: 1px solid #f3d1de;
+            padding-top: 18px;
+            margin-top: 10px;
+        }
+
+        .cerrar-sesion svg {
+            width: 18px;
+            height: 18px;
+            fill: #9d2449;
+        }
+        .cerrar-sesion button {
+            background: transparent;
+            border: 0;
+            color: inherit;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: inherit;
+            font: inherit;
+            padding: 0;
+        }
+
+        /* ===== CONTENIDO PRINCIPAL ===== */
+        .main {
+            flex-grow: 1;
+            padding: 40px 45px;
+            overflow-y: auto;
+        }
+
+        .main h1 {
+            font-size: 1.6rem;
+            color: #9d2449;
+            margin-bottom: 6px;
+            font-weight: 700;
+        }
+
+        .main .subtitulo {
+            font-size: 0.9rem;
+            color: #a06b7d;
+            margin-bottom: 35px;
+        }
+
+        /* ===== CATEGORÍAS ===== */
+        .categoria {
+            margin-bottom: 35px;
+        }
+
+        .categoria h2 {
+            font-size: 1.15rem;
+            color: #9d2449;
+            margin-bottom: 18px;
+            font-weight: 700;
+        }
+
+        .grid-servicios {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 18px;
+        }
+
+        /* ===== TARJETA DE SERVICIO ===== */
+        .servicio-card {
+            background: #fff;
+            border-radius: 14px;
+            padding: 22px;
+            box-shadow: 0 2px 12px rgba(157, 36, 73, 0.06);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .servicio-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(157, 36, 73, 0.1);
+        }
+
+        .servicio-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+
+        .servicio-nombre {
+            font-size: 1rem;
+            color: #9d2449;
+            font-weight: 700;
+        }
+
+        .badge-demo {
+            background: #fef3c7;
+            color: #92400e;
+            font-size: 0.65rem;
+            font-weight: 700;
+            padding: 3px 9px;
+            border-radius: 20px;
+            letter-spacing: 0.5px;
+        }
+
+        .servicio-descripcion {
+            font-size: 0.85rem;
+            color: #a06b7d;
+            margin-bottom: 16px;
+            line-height: 1.4;
+        }
+
+        .servicio-info {
+            display: flex;
+            gap: 22px;
+            font-size: 0.85rem;
+            color: #6b3a4a;
+            font-weight: 600;
+        }
+
+        .servicio-info span {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .servicio-info svg {
+            width: 15px;
+            height: 15px;
+            fill: #c98aa3;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .sidebar {
+                display: none;
+            }
+            .main {
+                padding: 25px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ===== SIDEBAR ===== -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <div class="logo-icon">
+                <svg viewBox="0 0 24 24">
+                    <path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4L12 2z"/>
+                </svg>
+            </div>
+            <div class="logo-text">
+                <h3>Leidy Make Up</h3>
+                <p>Cliente</p>
+            </div>
+        </div>
+
+        <p class="usuario-info">Adrian Soto</p>
+
+        <ul class="menu">
+            <li>
+                <a href="{% url 'App_agenda:c_mis_citas' %}">
+                    <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+                    Inicio
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'App_servicios:lista' %}" class="activo">
+                    <svg viewBox="0 0 24 24"><path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4L12 2z"/></svg>
+                    Servicios
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'App_agenda:c_reservar' %}">
+                    <svg viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2zm0 16H5V8h14v11z"/></svg>
+                    Reservar cita
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'App_agenda:c_mis_citas' %}">
+                    <svg viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg>
+                    Mis citas
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'App_agenda:c_mensajes' %}">
+                    <svg viewBox="0 0 24 24"><path d="M20 2H4a2 2 0 00-2 2v18l4-4h14a2 2 0 002-2V4a2 2 0 00-2-2z"/></svg>
+                    Mensajes
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'App_usuarios:perfil' %}">
+                    <svg viewBox="0 0 24 24"><path d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-3.3 0-10 1.7-10 5v3h20v-3c0-3.3-6.7-5-10-5z"/></svg>
+                    Mi perfil
+                </a>
+            </li>
+        </ul>
+
+        <form method="post" action="{% url 'App_usuarios:logout' %}" class="cerrar-sesion">
+            {% csrf_token %}
+            <button type="submit"><svg viewBox="0 0 24 24"><path d="M16 13v-2H7V8l-5 4 5 4v-3zM20 3h-8v2h8v14h-8v2h8a2 2 0 002-2V5a2 2 0 00-2-2z"/></svg> Cerrar sesión</button>
+        </form>
+    </aside>
+
+    <!-- ===== CONTENIDO ===== -->
+    <main class="main">
+        <h1>Servicios</h1>
+        <p class="subtitulo">Catálogo de servicios disponibles en Leidy Make Up.</p>
+
+        <!-- Categoría: Maquillaje -->
+        <section class="categoria">
+            <h2>Maquillaje</h2>
+            <div class="grid-servicios">
+                <div class="servicio-card">
+                    <div class="servicio-header">
+                        <span class="servicio-nombre">Maquillaje social</span>
+                        <span class="badge-demo">DEMO</span>
+                    </div>
+                    <p class="servicio-descripcion">Maquillaje elegante para ocasiones sociales.</p>
+                    <div class="servicio-info">
+                        <span>
+                            <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                            $60.000
+                        </span>
+                        <span>
+                            <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 18a8 8 0 110-16 8 8 0 010 16zm.5-13H11v6l5.2 3.2.8-1.3-4.5-2.7V7z"/></svg>
+                            60 min (referencial)
+                        </span>
+                    </div>
+                </div>
+
+                <div class="servicio-card">
+                    <div class="servicio-header">
+                        <span class="servicio-nombre">Maquillaje para eventos</span>
+                        <span class="badge-demo">DEMO</span>
+                    </div>
+                    <p class="servicio-descripcion">Maquillaje profesional para eventos especiales.</p>
+                    <div class="servicio-info">
+                        <span>
+                            <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                            $120.000
+                        </span>
+                        <span>
+                            <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 18a8 8 0 110-16 8 8 0 010 16zm.5-13H11v6l5.2 3.2.8-1.3-4.5-2.7V7z"/></svg>
+                            90 min (referencial)
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Categoría: Peinado -->
+        <section class="categoria">
+            <h2>Peinado</h2>
+            <div class="grid-servicios">
+                <div class="servicio-card">
+                    <div class="servicio-header">
+                        <span class="servicio-nombre">Peinado</span>
+                        <span class="badge-demo">DEMO</span>
+                    </div>
+                    <p class="servicio-descripcion">Peinado clásico y moderno.</p>
+                    <div class="servicio-info">
+                        <span>
+                            <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                            $45.000
+                        </span>
+                        <span>
+                            <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 18a8 8 0 110-16 8 8 0 010 16zm.5-13H11v6l5.2 3.2.8-1.3-4.5-2.7V7z"/></svg>
+                            60 min (referencial)
+                        </span>
+                    </div>
+                </div>
+
+                <div class="servicio-card">
+                    <div class="servicio-header">
+                        <span class="servicio-nombre">Peinado para eventos</span>
+                        <span class="badge-demo">DEMO</span>
+                    </div>
+                    <p class="servicio-descripcion">Peinado elaborado para eventos.</p>
+                    <div class="servicio-info">
+                        <span>
+                            <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                            $80.000
+                        </span>
+                        <span>
+                            <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 18a8 8 0 110-16 8 8 0 010 16zm.5-13H11v6l5.2 3.2.8-1.3-4.5-2.7V7z"/></svg>
+                            90 min (referencial)
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Categoría: Keratina -->
+        <section class="categoria">
+            <h2>Keratina</h2>
+            <div class="grid-servicios">
+                <div class="servicio-card">
+                    <div class="servicio-header">
+                        <span class="servicio-nombre">Keratina</span>
+                        <span class="badge-demo">DEMO</span>
+                    </div>
+                    <p class="servicio-descripcion">Tratamiento de keratina para alisar y fortalecer el cabello.</p>
+                    <div class="servicio-info">
+                        <span>
+                            <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                            $180.000
+                        </span>
+                        <span>
+                            <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 18a8 8 0 110-16 8 8 0 010 16zm.5-13H11v6l5.2 3.2.8-1.3-4.5-2.7V7z"/></svg>
+                            180 min (referencial)
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+</body>
+</html>

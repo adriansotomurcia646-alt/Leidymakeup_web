@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Leidy Make Up - Cliente{% endblock %}</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-gray-50/50 font-sans text-gray-800 antialiased">
+
+<div class="min-h-screen flex">
+  
+  <!-- BARRA LATERAL (SIDEBAR) -->
+  <aside class="w-64 bg-white border-r border-rose-100 flex flex-col justify-between p-6 shrink-0 min-h-screen">
+    <div>
+      <!-- LOGO Y ROL -->
+      <div class="flex items-center gap-3 mb-6">
+        <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-rose-500 to-pink-400 flex items-center justify-center text-white shadow-md shadow-rose-200">
+          <i data-lucide="sparkles" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-gray-900 text-sm leading-tight">Leidy Make Up</h1>
+          <span class="text-[11px] text-gray-400 font-medium">Cliente</span>
+        </div>
+      </div>
+
+      <!-- NOMBRE DE USUARIO -->
+      <p class="text-xs font-medium text-gray-500 mb-6 px-1">
+        {{ request.user.get_full_name|default:request.user.username }}
+      </p>
+
+<!-- Menú de Navegación Dinámico -->
+            <nav class="px-4 space-y-1">
+                <a href="{% url 'App_agenda:c_inicio' %}" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-colors text-xs font-medium {% if request.resolver_match.url_name == 'c_inicio' %}bg-[#d6336c] text-white shadow-sm shadow-pink-200{% else %}text-gray-600 hover:bg-gray-50{% endif %}">
+                    <i data-lucide="home" class="w-4 h-4"></i>
+                    Inicio
+                </a>
+                <a href="{% url 'App_servicios:lista' %}" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-colors text-xs font-medium {% if request.resolver_match.url_name == 'lista' or request.resolver_match.url_name == 'catalogo' %}bg-[#d6336c] text-white shadow-sm shadow-pink-200{% else %}text-gray-600 hover:bg-gray-50{% endif %}">
+                    <i data-lucide="scissors" class="w-4 h-4"></i>
+                    Servicios
+                </a>
+                <a href="{% url 'App_agenda:c_reservar' %}" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-colors text-xs font-medium {% if request.resolver_match.url_name == 'c_reservar' or request.resolver_match.url_name == 'reservar_cita' %}bg-[#d6336c] text-white shadow-sm shadow-pink-200{% else %}text-gray-600 hover:bg-gray-50{% endif %}">
+                    <i data-lucide="calendar-plus" class="w-4 h-4"></i>
+                    Reservar cita
+                </a>
+                <a href="{% url 'App_agenda:c_mis_citas' %}" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-colors text-xs font-medium {% if request.resolver_match.url_name == 'c_mis_citas' %}bg-[#d6336c] text-white shadow-sm shadow-pink-200{% else %}text-gray-600 hover:bg-gray-50{% endif %}">
+                    <i data-lucide="calendar" class="w-4 h-4"></i>
+                    Mis citas
+                </a>
+                <a href="{% url 'App_agenda:c_mensajes' %}" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-colors text-xs font-medium {% if request.resolver_match.url_name == 'c_mensajes' %}bg-[#d6336c] text-white shadow-sm shadow-pink-200{% else %}text-gray-600 hover:bg-gray-50{% endif %}">
+                    <i data-lucide="message-square" class="w-4 h-4"></i>
+                    Mensajes
+                </a>
+                <a href="{% url 'App_agenda:c_calendario' %}" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-colors text-xs font-medium {% if request.resolver_match.url_name == 'c_calendario' %}bg-[#d6336c] text-white shadow-sm shadow-pink-200{% else %}text-gray-600 hover:bg-gray-50{% endif %}">
+                    <i data-lucide="calendar-days" class="w-4 h-4"></i>
+                    Calendario
+                </a>
+                <a href="{% url 'App_usuarios:perfil' %}" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-colors text-xs font-medium {% if request.resolver_match.url_name == 'perfil' %}bg-[#d6336c] text-white shadow-sm shadow-pink-200{% else %}text-gray-600 hover:bg-gray-50{% endif %}">
+                    <i data-lucide="user" class="w-4 h-4"></i>
+                    Mi perfil
+                </a>
+            </nav>
+    <!-- BOTÓN CERRAR SESIÓN -->
+    <form method="post" action="{% url 'App_usuarios:logout' %}" class="mt-auto">
+      {% csrf_token %}
+      <button type="submit" class="flex items-center gap-2 px-2 py-2 text-xs font-medium text-gray-500 hover:text-rose-600 transition-all">
+        <i data-lucide="log-out" class="w-4 h-4"></i> Cerrar sesión
+      </button>
+    </form>
+  </aside>
+
+  <!-- ÁREA DE CONTENIDO PRINCIPAL -->
+  <main class="flex-1 p-8 overflow-y-auto">
+    {% if messages %}
+      <div class="mx-auto mb-6 max-w-5xl space-y-2">
+        {% for message in messages %}
+          <p class="rounded-xl border border-rose-100 bg-white px-4 py-3 text-sm text-gray-700">{{ message }}</p>
+        {% endfor %}
+      </div>
+    {% endif %}
+    {% block content %}
+    {% endblock %}
+  </main>
+
+</div>
+
+<script>
+    lucide.createIcons();
+</script>
+</body>
+</html>

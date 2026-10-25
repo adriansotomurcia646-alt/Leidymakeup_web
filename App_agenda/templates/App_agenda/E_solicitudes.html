@@ -1,0 +1,126 @@
+{% extends 'App_usuarios/E_base.html' %}
+
+{% block title %}Solicitudes - Leidy Make Up{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-6">
+
+  <!-- ENCABEZADO -->
+  <div>
+    <h1 class="text-2xl font-bold text-[#800020]">Solicitudes</h1>
+    <p class="text-xs text-rose-400 mt-0.5">Gestiona las solicitudes de citas de tus clientas.</p>
+  </div>
+
+  <!-- PILDORAS DE FILTRO -->
+  <div class="flex flex-wrap gap-2">
+    <a href="?estado=PENDIENTE" class="px-4 py-2 rounded-full text-xs font-semibold transition-all {% if request.GET.estado == 'PENDIENTE' or not request.GET.estado %}bg-[#800020] text-white shadow-sm shadow-rose-200{% else %}bg-white text-gray-600 border border-rose-100 hover:bg-rose-50{% endif %}">
+      Pendientes
+    </a>
+    <a href="?estado=CONFIRMADA" class="px-4 py-2 rounded-full text-xs font-semibold transition-all {% if request.GET.estado == 'CONFIRMADA' %}bg-[#800020] text-white shadow-sm shadow-rose-200{% else %}bg-white text-gray-600 border border-rose-100 hover:bg-rose-50{% endif %}">
+      Confirmadas
+    </a>
+    <a href="?estado=TODAS" class="px-4 py-2 rounded-full text-xs font-semibold transition-all {% if request.GET.estado == 'TODAS' %}bg-[#800020] text-white shadow-sm shadow-rose-200{% else %}bg-white text-gray-600 border border-rose-100 hover:bg-rose-50{% endif %}">
+      Todas
+    </a>
+    <a href="?estado=RECHAZADA" class="px-4 py-2 rounded-full text-xs font-semibold transition-all {% if request.GET.estado == 'RECHAZADA' %}bg-[#800020] text-white shadow-sm shadow-rose-200{% else %}bg-white text-gray-600 border border-rose-100 hover:bg-rose-50{% endif %}">
+      Rechazadas
+    </a>
+    <a href="?estado=CANCELADA" class="px-4 py-2 rounded-full text-xs font-semibold transition-all {% if request.GET.estado == 'CANCELADA' %}bg-[#800020] text-white shadow-sm shadow-rose-200{% else %}bg-white text-gray-600 border border-rose-100 hover:bg-rose-50{% endif %}">
+      Canceladas
+    </a>
+    <a href="?estado=FINALIZADA" class="px-4 py-2 rounded-full text-xs font-semibold transition-all {% if request.GET.estado == 'FINALIZADA' %}bg-[#800020] text-white shadow-sm shadow-rose-200{% else %}bg-white text-gray-600 border border-rose-100 hover:bg-rose-50{% endif %}">
+      Hechas
+    </a>
+  </div>
+
+  <!-- LISTA DE SOLICITUDES -->
+  <div class="space-y-4">
+    {% for cita in citas %}
+    <div class="bg-white rounded-2xl border border-rose-100/70 p-6 shadow-sm relative transition-all">
+      
+      <!-- BADGE DE ESTADO -->
+      <div class="absolute top-6 right-6">
+        {% if cita.estado == 'PENDIENTE' %}
+          <span class="px-3 py-1 rounded-full text-[11px] font-semibold bg-amber-100/70 text-amber-700 border border-amber-200/50">En espera</span>
+        {% elif cita.estado == 'CONFIRMADA' %}
+          <span class="px-3 py-1 rounded-full text-[11px] font-semibold bg-emerald-100/70 text-emerald-700 border border-emerald-200/50">Aceptada</span>
+        {% elif cita.estado == 'RECHAZADA' %}
+          <span class="px-3 py-1 rounded-full text-[11px] font-semibold bg-rose-100/70 text-rose-700 border border-rose-200/50">Rechazada</span>
+        {% elif cita.estado == 'FINALIZADA' %}
+          <span class="px-3 py-1 rounded-full text-[11px] font-semibold bg-emerald-100/70 text-emerald-700 border border-emerald-200/50">Hecho</span>
+        {% else %}
+          <span class="px-3 py-1 rounded-full text-[11px] font-semibold bg-gray-100 text-gray-600 border border-gray-200">{{ cita.estado }}</span>
+        {% endif %}
+      </div>
+
+      <!-- TÍTULO DEL SERVICIO -->
+      <div class="flex items-center gap-2 text-rose-600 mb-1">
+        <i data-lucide="sparkles" class="w-4 h-4"></i>
+        <h3 class="text-sm font-bold text-gray-900">{{ cita.servicio.nombre }}</h3>
+      </div>
+
+      <!-- DATOS DEL CLIENTE Y FECHA -->
+      <p class="text-xs font-semibold text-gray-700 mt-1">
+        {{ cita.cliente.get_full_name|default:cita.cliente.username }} 
+        {% if cita.cliente.profile.telefono %}
+          <span class="text-gray-400 font-normal ml-1">📞 {{ cita.cliente.profile.telefono }}</span>
+        {% endif %}
+      </p>
+      
+      <p class="text-xs text-gray-400 mt-0.5">
+        {{ cita.fecha|date:"l, d \d\e F \d\e Y" }} · {{ cita.hora_inicio|time:"H:i A" }}
+      </p>
+
+      <!-- CAJA DE MENSAJE / NOTA DEL CLIENTE -->
+      {% if cita.mensaje or cita.nota %}
+      <div class="mt-4 p-3 bg-gray-50 rounded-xl border border-gray-100 text-xs text-gray-600">
+        {{ cita.mensaje|default:cita.nota }}
+      </div>
+      {% endif %}
+
+      {% if cita.archivos.all %}
+      <div class="mt-4 space-y-2">
+        <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Archivos adjuntos</p>
+        <div class="flex flex-wrap gap-2">
+          {% for archivo in cita.archivos.all %}
+            <a href="{{ archivo.archivo.url }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 rounded-full border border-rose-100 bg-rose-50 px-3 py-1.5 text-[11px] text-rose-700 hover:bg-rose-100">
+              {{ archivo.nombre_original|default:archivo.archivo.name }}
+            </a>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- BOTONES DE ACCIÓN (Confirmar / Rechazar si está pendiente) -->
+      {% if cita.estado == 'PENDIENTE' %}
+      <div class="flex items-center gap-2 mt-4 pt-3 border-t border-gray-50">
+        <form method="post" action="{% url 'App_agenda:actualizar_solicitud' cita.id 'CONFIRMADA' %}">
+          {% csrf_token %}
+          <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 shadow-sm">
+            <i data-lucide="check" class="w-3.5 h-3.5"></i> Confirmar
+          </button>
+        </form>
+        <form method="post" action="{% url 'App_agenda:actualizar_solicitud' cita.id 'RECHAZADA' %}">
+          {% csrf_token %}
+          <button type="submit" class="px-4 py-2 bg-white border border-rose-200 hover:bg-rose-50 text-rose-600 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 shadow-sm">
+            <i data-lucide="x" class="w-3.5 h-3.5"></i> Rechazar
+          </button>
+        </form>
+      </div>
+      {% endif %}
+
+    </div>
+    {% empty %}
+    <!-- ESTADO VACÍO -->
+    <div class="bg-white rounded-2xl border border-rose-100 p-12 text-center max-w-md mx-auto shadow-sm">
+      <div class="w-12 h-12 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center mx-auto mb-3">
+        <i data-lucide="inbox" class="w-6 h-6"></i>
+      </div>
+      <h3 class="text-sm font-bold text-gray-800">No hay solicitudes</h3>
+      <p class="text-xs text-gray-400 mt-1">No se encontraron citas con este filtro en el sistema.</p>
+    </div>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}

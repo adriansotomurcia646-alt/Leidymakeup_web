@@ -1,0 +1,337 @@
+<div id="calendar-app"
+     class="mx-auto max-w-6xl space-y-6"
+     data-endpoint="{% if rol_calendario == 'estilista' %}{% url 'App_agenda:e_calendario' %}{% else %}{% url 'App_agenda:c_calendario' %}{% endif %}"
+     data-role="{{ rol_calendario }}"
+     data-complete-url="{% if rol_calendario == 'estilista' %}{% url 'App_agenda:completar_cita' 0 %}{% endif %}">
+  <div>
+    <h1 class="text-2xl font-bold {% if rol_calendario == 'estilista' %}text-[#800020]{% else %}text-gray-900{% endif %}">
+      {% if rol_calendario == 'estilista' %}Calendario{% else %}Mi calendario{% endif %}
+    </h1>
+    <p class="mt-0.5 text-xs text-rose-400">Consulta tus citas y horarios en cualquier fecha.</p>
+  </div>
+
+  <form id="calendar-filters" class="grid grid-cols-1 items-end gap-3 rounded-2xl border border-rose-100 bg-white p-4 shadow-sm sm:grid-cols-2 lg:grid-cols-7">
+    <div>
+      <label for="calendar-search" class="mb-1 block text-xs font-semibold text-gray-700">Cliente o servicio</label>
+      <input id="calendar-search" name="q" maxlength="100" value="{{ request.GET.q }}" class="w-full rounded-xl border border-rose-100 p-2.5 text-sm" placeholder="Buscar...">
+    </div>
+    <div>
+      <label for="calendar-state" class="mb-1 block text-xs font-semibold text-gray-700">Estado</label>
+      <select id="calendar-state" name="estado" class="w-full rounded-xl border border-rose-100 bg-white p-2.5 text-sm">
+        <option value="">Todos los estados</option>
+        {% for value, label in estados_choices %}
+          <option value="{{ value }}" {% if request.GET.estado == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="calendar-from" class="mb-1 block text-xs font-semibold text-gray-700">Desde</label>
+      <input id="calendar-from" name="desde" type="date" value="{{ request.GET.desde }}" class="w-full rounded-xl border border-rose-100 p-2.5 text-sm">
+    </div>
+    <div>
+      <label for="calendar-to" class="mb-1 block text-xs font-semibold text-gray-700">Hasta</label>
+      <input id="calendar-to" name="hasta" type="date" value="{{ request.GET.hasta }}" class="w-full rounded-xl border border-rose-100 p-2.5 text-sm">
+    </div>
+    <div>
+      <label for="calendar-time-from" class="mb-1 block text-xs font-semibold text-gray-700">Hora desde</label>
+      <input id="calendar-time-from" name="hora_desde" type="time" value="{{ request.GET.hora_desde }}" class="w-full rounded-xl border border-rose-100 p-2.5 text-sm">
+    </div>
+    <div>
+      <label for="calendar-time-to" class="mb-1 block text-xs font-semibold text-gray-700">Hora hasta</label>
+      <input id="calendar-time-to" name="hora_hasta" type="time" value="{{ request.GET.hora_hasta }}" class="w-full rounded-xl border border-rose-100 p-2.5 text-sm">
+    </div>
+    <button id="clear-calendar-filters" type="button" class="rounded-xl border border-rose-200 px-4 py-2.5 text-sm font-semibold text-rose-600 hover:bg-rose-50">Limpiar filtros</button>
+  </form>
+
+  <p id="calendar-error" class="{% if error %}block{% else %}hidden{% endif %} rounded-xl border border-rose-100 bg-rose-50 p-3 text-sm text-rose-700" role="alert">{{ error }}</p>
+
+  <div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
+    <section class="rounded-3xl border border-rose-100/70 bg-white p-4 shadow-sm sm:p-6 lg:col-span-7" aria-label="Navegación del calendario">
+      <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-2">
+          <button id="calendar-prev" type="button" aria-label="Periodo anterior" class="rounded-lg p-2 text-gray-500 hover:bg-rose-50 hover:text-rose-600"><i data-lucide="chevron-left" class="h-4 w-4"></i></button>
+          <button id="calendar-today" type="button" class="rounded-lg border border-rose-100 px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50">Hoy</button>
+          <button id="calendar-next" type="button" aria-label="Periodo siguiente" class="rounded-lg p-2 text-gray-500 hover:bg-rose-50 hover:text-rose-600"><i data-lucide="chevron-right" class="h-4 w-4"></i></button>
+          <h2 id="calendar-heading" class="ml-2 text-sm font-bold text-gray-800">{{ fecha|date:"F Y"|title }}</h2>
+        </div>
+        <div class="flex rounded-xl border border-rose-100 p-1">
+          <button type="button" data-view="mes" class="calendar-view rounded-lg px-2.5 py-1.5 text-xs font-semibold">Mes</button>
+          <button type="button" data-view="semana" class="calendar-view rounded-lg px-2.5 py-1.5 text-xs font-semibold">Semana</button>
+          <button type="button" data-view="dia" class="calendar-view rounded-lg px-2.5 py-1.5 text-xs font-semibold">Día</button>
+        </div>
+      </div>
+      <div id="calendar-grid" class="grid grid-cols-7 gap-y-1 text-center"></div>
+    </section>
+
+    <section class="min-h-[380px] rounded-3xl border border-rose-100/70 bg-white p-5 shadow-sm sm:p-6 lg:col-span-5">
+      <div class="mb-4 border-b border-gray-100 pb-3">
+        <h3 id="selected-day-heading" class="text-sm font-bold text-gray-900">{{ fecha|date:"l, d \d\e F \d\e Y"|title }}</h3>
+        <p id="daily-summary" class="mt-2 text-[11px] text-gray-500"></p>
+        {% if rol_calendario == 'estilista' %}
+          <p id="daily-duration" class="mt-1 text-[11px] text-gray-500"></p>
+        {% endif %}
+      </div>
+      <div id="calendar-events" class="space-y-3"></div>
+      <p id="calendar-empty" class="hidden py-12 text-center text-xs text-rose-400">No hay citas para esta fecha.</p>
+    </section>
+  </div>
+  {{ calendar_json|json_script:"calendar-data" }}
+  {% csrf_token %}
+</div>
+
+<script>
+(() => {
+  const app = document.getElementById('calendar-app');
+  const endpoint = app.dataset.endpoint;
+  const role = app.dataset.role;
+  const filters = document.getElementById('calendar-filters');
+  const grid = document.getElementById('calendar-grid');
+  const events = document.getElementById('calendar-events');
+  const errorBox = document.getElementById('calendar-error');
+  const empty = document.getElementById('calendar-empty');
+  const csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
+  const stateLabels = {
+    PENDIENTE: 'Pendiente',
+    CONFIRMADA: 'Confirmada',
+    FINALIZADA: 'Hecho',
+    RECHAZADA: 'Rechazada',
+    CANCELADA: 'Cancelada'
+  };
+  let data = JSON.parse(document.getElementById('calendar-data').textContent);
+
+  const parseDate = value => {
+    const [year, month, day] = value.split('-').map(Number);
+    return new Date(Date.UTC(year, month - 1, day));
+  };
+  const isoDate = value => value.toISOString().slice(0, 10);
+  const dateLabel = value => new Intl.DateTimeFormat('es-CO', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC'
+  }).format(parseDate(value));
+  const timeLabel = value => {
+    const [hours, minutes] = value.split(':').map(Number);
+    return new Intl.DateTimeFormat('es-CO', {
+      hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'UTC'
+    }).format(new Date(Date.UTC(2020, 0, 1, hours, minutes)));
+  };
+  const monthLabel = value => new Intl.DateTimeFormat('es-CO', {
+    month: 'long', year: 'numeric', timeZone: 'UTC'
+  }).format(parseDate(value));
+  const filteredParams = () => new URLSearchParams(new FormData(filters));
+
+  function renderGrid() {
+    const selected = parseDate(data.fecha);
+    const eventDates = new Set(data.dias_con_citas);
+    const weekdays = ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB', 'DOM'];
+    grid.replaceChildren();
+
+    if (data.vista === 'dia') {
+      const weekday = document.createElement('span');
+      weekday.className = 'col-span-7 py-2 text-[10px] font-semibold text-gray-400';
+      weekday.textContent = new Intl.DateTimeFormat('es-CO', {
+        weekday: 'long', timeZone: 'UTC'
+      }).format(selected).toLocaleUpperCase('es-CO');
+      grid.append(weekday);
+      addDayButton(data.fecha, false, eventDates.has(data.fecha));
+      document.getElementById('calendar-heading').textContent = dateLabel(data.fecha);
+      return;
+    }
+
+    if (data.vista === 'mes') {
+      weekdays.forEach(day => {
+        const label = document.createElement('span');
+        label.className = 'pb-2 text-[10px] font-semibold text-gray-400 sm:text-[11px]';
+        label.textContent = day;
+        grid.append(label);
+      });
+      const first = new Date(Date.UTC(selected.getUTCFullYear(), selected.getUTCMonth(), 1));
+      const mondayOffset = (first.getUTCDay() + 6) % 7;
+      const start = new Date(first);
+      start.setUTCDate(first.getUTCDate() - mondayOffset);
+      const last = new Date(Date.UTC(selected.getUTCFullYear(), selected.getUTCMonth() + 1, 0));
+      const totalDays = Math.ceil((last - start) / 86400000) + 1;
+      const cellCount = Math.ceil(totalDays / 7) * 7;
+      for (let index = 0; index < cellCount; index++) {
+        const day = new Date(start);
+        day.setUTCDate(start.getUTCDate() + index);
+        const key = isoDate(day);
+        addDayButton(key, day.getUTCMonth() !== selected.getUTCMonth(), eventDates.has(key));
+      }
+      document.getElementById('calendar-heading').textContent = monthLabel(data.fecha);
+      return;
+    }
+
+    weekdays.forEach(day => {
+      const label = document.createElement('span');
+      label.className = 'pb-2 text-[10px] font-semibold text-gray-400 sm:text-[11px]';
+      label.textContent = day;
+      grid.append(label);
+    });
+    const start = parseDate(data.inicio_periodo);
+    const end = parseDate(data.fin_periodo);
+    for (let day = new Date(start); day <= end; day.setUTCDate(day.getUTCDate() + 1)) {
+      const key = isoDate(day);
+      addDayButton(key, false, eventDates.has(key));
+    }
+    document.getElementById('calendar-heading').textContent =
+      data.vista === 'dia' ? dateLabel(data.fecha) :
+      `${dateLabel(data.inicio_periodo)} – ${dateLabel(data.fin_periodo)}`;
+  }
+
+  function addDayButton(key, outsideMonth, hasAppointments) {
+    const button = document.createElement('button');
+    const selected = key === data.fecha;
+    const today = key === data.hoy;
+    button.type = 'button';
+    button.dataset.date = key;
+    button.className = `relative mx-auto flex min-h-10 w-full max-w-12 flex-col items-center justify-center rounded-xl py-2 text-xs transition-colors ${
+      selected ? 'bg-[#800020] font-bold text-white shadow-sm shadow-rose-200' :
+      today ? 'font-bold text-rose-600 ring-1 ring-rose-300' :
+      outsideMonth ? 'text-gray-300 hover:bg-rose-50' : 'text-gray-700 hover:bg-rose-50'
+    }`;
+    button.textContent = String(Number(key.slice(-2)));
+    if (hasAppointments) {
+      const dot = document.createElement('span');
+      dot.className = `mt-0.5 h-1 w-1 rounded-full ${selected ? 'bg-white' : 'bg-rose-500'}`;
+      button.append(dot);
+    }
+    button.addEventListener('click', () => load({fecha: key}));
+    grid.append(button);
+  }
+
+  function renderEvents() {
+    events.replaceChildren();
+    data.citas_dia.forEach(cita => {
+      const completed = cita.estado === 'FINALIZADA';
+      const card = document.createElement('article');
+      card.className = `space-y-2 rounded-2xl border border-gray-100 p-4 ${
+        completed ? 'bg-gray-50 opacity-60' :
+        cita.estado === 'RECHAZADA' || cita.estado === 'CANCELADA' ? 'bg-rose-50/50' : 'bg-gray-50'
+      }`;
+      const top = document.createElement('div');
+      top.className = 'flex items-start justify-between gap-2';
+      const details = document.createElement('div');
+      const name = document.createElement('h4');
+      name.className = `text-xs font-bold text-gray-800 ${completed ? 'line-through' : ''}`;
+      name.textContent = cita.cliente;
+      const service = document.createElement('p');
+      service.className = 'mt-0.5 text-[11px] text-gray-600';
+      service.textContent = `${cita.servicio}${cita.categoria ? ` · ${cita.categoria}` : ''} · $${cita.precio}`;
+      details.append(name, service);
+      const badge = document.createElement('span');
+      badge.className = `shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-semibold ${
+        completed ? 'bg-emerald-100 text-emerald-700' :
+        cita.estado === 'CONFIRMADA' ? 'bg-emerald-100 text-emerald-700' :
+        cita.estado === 'PENDIENTE' ? 'bg-amber-100 text-amber-700' :
+        'bg-rose-100 text-rose-700'
+      }`;
+      badge.textContent = stateLabels[cita.estado] || cita.estado;
+      top.append(details, badge);
+      const time = document.createElement('p');
+      time.className = 'border-t border-gray-200/50 pt-2 text-[11px] text-gray-500';
+      time.textContent = `${timeLabel(cita.inicio)} – ${timeLabel(cita.fin)} · ${cita.duracion} min`;
+      card.append(top, time);
+      if (cita.mensaje) {
+        const note = document.createElement('p');
+        note.className = 'text-[11px] text-gray-500';
+        note.textContent = cita.mensaje;
+        card.append(note);
+      }
+      if (role === 'estilista' && cita.estado === 'CONFIRMADA') {
+        const form = document.createElement('form');
+        form.method = 'post';
+        form.action = app.dataset.completeUrl.replace('/0/completar/', `/${cita.id}/completar/`);
+        const token = document.createElement('input');
+        token.type = 'hidden';
+        token.name = 'csrfmiddlewaretoken';
+        token.value = csrf;
+        const button = document.createElement('button');
+        button.type = 'submit';
+        button.className = 'rounded-lg bg-emerald-600 px-3 py-2 text-[11px] font-semibold text-white hover:bg-emerald-700';
+        button.textContent = 'Marcar Hecho';
+        form.append(token, button);
+        card.append(form);
+      }
+      events.append(card);
+    });
+    empty.classList.toggle('hidden', data.citas_dia.length > 0);
+    document.getElementById('selected-day-heading').textContent = dateLabel(data.fecha);
+    const summary = data.resumen;
+    document.getElementById('daily-summary').textContent = role === 'estilista'
+      ? `Total: ${data.citas_dia.length} · Pendientes: ${summary.PENDIENTE} · Confirmadas: ${summary.CONFIRMADA} · Hechas: ${summary.FINALIZADA}`
+      : `Tus citas: ${data.citas_dia.length} · Próximas: ${data.proximas} · Hechas: ${summary.FINALIZADA}`;
+    const duration = document.getElementById('daily-duration');
+    if (duration) duration.textContent = `Duración programada: ${Math.floor(data.duracion_total / 60)} h ${data.duracion_total % 60} min`;
+  }
+
+  async function load(changes = {}) {
+    const params = filteredParams();
+    params.set('fecha', changes.fecha || data.fecha);
+    params.set('vista', changes.vista || data.vista);
+    params.set('formato', 'json');
+    try {
+      const response = await fetch(`${endpoint}?${params}`, {
+        headers: {'X-Requested-With': 'XMLHttpRequest'}
+      });
+      if (!response.ok) throw new Error('No fue posible actualizar el calendario.');
+      data = await response.json();
+      errorBox.textContent = data.error || '';
+      errorBox.classList.toggle('hidden', !data.error);
+      document.querySelectorAll('.calendar-view').forEach(button => {
+        const active = button.dataset.view === data.vista;
+        button.className = `calendar-view rounded-lg px-2.5 py-1.5 text-xs font-semibold ${
+          active ? 'bg-rose-600 text-white' : 'text-gray-500 hover:bg-rose-50'
+        }`;
+      });
+      renderGrid();
+      renderEvents();
+      const urlParams = new URLSearchParams(params);
+      urlParams.delete('formato');
+      history.replaceState({}, '', `${endpoint}?${urlParams}`);
+      if (window.lucide) lucide.createIcons();
+    } catch (error) {
+      errorBox.textContent = error.message;
+      errorBox.classList.remove('hidden');
+    }
+  }
+
+  document.getElementById('calendar-prev').addEventListener('click', () => {
+    const date = parseDate(data.fecha);
+    if (data.vista === 'mes') date.setUTCDate(1), date.setUTCMonth(date.getUTCMonth() - 1);
+    else date.setUTCDate(date.getUTCDate() - (data.vista === 'semana' ? 7 : 1));
+    load({fecha: isoDate(date)});
+  });
+  document.getElementById('calendar-next').addEventListener('click', () => {
+    const date = parseDate(data.fecha);
+    if (data.vista === 'mes') date.setUTCDate(1), date.setUTCMonth(date.getUTCMonth() + 1);
+    else date.setUTCDate(date.getUTCDate() + (data.vista === 'semana' ? 7 : 1));
+    load({fecha: isoDate(date)});
+  });
+  document.getElementById('calendar-today').addEventListener('click', () => {
+    load({fecha: data.hoy});
+  });
+  document.querySelectorAll('.calendar-view').forEach(button => {
+    button.addEventListener('click', () => load({vista: button.dataset.view}));
+  });
+  filters.addEventListener('submit', event => event.preventDefault());
+  filters.addEventListener('input', event => {
+    if (event.target.name === 'q') {
+      clearTimeout(window.calendarSearchTimer);
+      window.calendarSearchTimer = setTimeout(() => load(), 250);
+    }
+  });
+  filters.addEventListener('change', event => {
+    if (event.target.name !== 'q') load();
+  });
+  document.getElementById('clear-calendar-filters').addEventListener('click', () => {
+    filters.reset();
+    load();
+  });
+  renderGrid();
+  renderEvents();
+  document.querySelectorAll('.calendar-view').forEach(button => {
+    button.classList.toggle('bg-rose-600', button.dataset.view === data.vista);
+    button.classList.toggle('text-white', button.dataset.view === data.vista);
+    button.classList.toggle('text-gray-500', button.dataset.view !== data.vista);
+  });
+})();
+</script>

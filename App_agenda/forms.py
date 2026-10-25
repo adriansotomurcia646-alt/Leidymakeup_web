@@ -1,0 +1,192 @@
+from datetime import datetime, time, timedelta
+
+from django import forms
+from django.core.exceptions import ValidationError
+from django.utils import timezone
+
+from App_servicios.models import Servicio
+from App_usuarios.models import Estilista
+
+from .models import Cita, Horario
+
+
+LEGACY_BOOKING_TIMES = tuple(
+    time(hora, minuto)
+    for hora in range(24)
+    for minuto in (0, 30)
+)
+
+def _hora_fin(fecha, hora_inicio, servicio):
+	return (
+		datetime.combine(fecha, hora_inicio)
+		+ timedelta(minutes=servicio.duracion)
+	).time()
+
+
+def _estilista_disponible(estilista, fecha, hora_inicio, servicio, cliente=None):
+	hora_fin = _hora_fin(fecha, hora_inicio, servicio)
+	if hora_fin <= hora_inicio:
+		return False
+
+	horarios_configurados = Horario.objects.filter(estilista=estilista).exists()
+	if horarios_configurados:
+		horario_encontrado = Horario.objects.filter(
+			estilista=estilista,
+			dia_semana=fecha.weekday(),
+			activo=True,
+			hora_inicio__lte=hora_inicio,
+			hora_fin__gte=hora_fin,
+		).exists()
+		if not horario_encontrado:
+			return False
+	elif hora_inicio not in LEGACY_BOOKING_TIMES:
+		return False
+
+	citas_ocupadas = Cita.objects.filter(
+		estilista=estilista,
+		fecha=fecha,
+		estado__in=('PENDIENTE', 'CONFIRMADA'),
+		hora_inicio__lt=hora_fin,
+		hora_fin__gt=hora_inicio,
+	)
+	if citas_ocupadas.exists():
+		return False
+
+	if cliente is not None and Cita.objects.filter(
+		cliente=cliente,
+		servicio=servicio,
+		fecha=fecha,
+		hora_inicio=hora_inicio,
+		estado__in=('PENDIENTE', 'CONFIRMADA'),
+	).exists():
+		return False
+
+	if fecha == timezone.localdate() and hora_inicio <= timezone.localtime().time():
+		return False
+	return True
+
+
+def obtener_horarios_disponibles(fecha, servicio):
+	horarios = set()
+	estilistas = Estilista.objects.filter(persona__rol='estilista')
+	for estilista in estilistas:
+		configurados = Horario.objects.filter(
+			estilista=estilista,
+			dia_semana=fecha.weekday(),
+			activo=True,
+		).order_by('hora_inicio')
+		if Horario.objects.filter(estilista=estilista).exists():
+			for horario in configurados:
+				actual = datetime.combine(fecha, horario.hora_inicio)
+				limite = datetime.combine(fecha, horario.hora_fin)
+				while actual + timedelta(minutes=servicio.duracion) <= limite:
+					if _estilista_disponible(
+						estilista, fecha, actual.time(), servicio
+					):
+						horarios.add(actual.time())
+					actual += timedelta(minutes=30)
+		else:
+			for hora in LEGACY_BOOKING_TIMES:
+				if _estilista_disponible(estilista, fecha, hora, servicio):
+					horarios.add(hora)
+	return sorted(horarios)
+
+
+class ReservarCitaForm(forms.ModelForm):
+	class Meta:
+		model = Cita
+		fields = (
+			'servicio',
+			'estilista',
+			'fecha',
+			'hora_inicio',
+			'mensaje',
+			'fecha_solicitada',
+			'hora_solicitada',
+		)
+		widgets = {
+			'fecha': forms.DateInput(attrs={'type': 'date'}),
+			'hora_inicio': forms.TimeInput(attrs={'type': 'time'}),
+			'fecha_solicitada': forms.DateInput(attrs={'type': 'date'}),
+			'hora_solicitada': forms.TimeInput(attrs={'type': 'time'}),
+		}
+
+	def __init__(self, *args, **kwargs):
+		data = kwargs.get('data', args[0] if args else None)
+		if data is not None:
+			data = data.copy()
+			for source, target in (
+				('servicio_id', 'servicio'),
+				('hora', 'hora_inicio'),
+				('fecha_solicitada', 'fecha_solicitada'),
+				('hora_solicitada', 'hora_solicitada'),
+			):
+				if target not in data and source in data:
+					data[target] = data[source]
+			if 'data' in kwargs:
+				kwargs['data'] = data
+			else:
+				args = (data, *args[1:])
+		super().__init__(*args, **kwargs)
+		self.fields['servicio'].queryset = Servicio.objects.filter(activo=True).order_by(
+			'nombre'
+		)
+		self.fields['estilista'].queryset = Estilista.objects.filter(
+			persona__rol='estilista'
+		).select_related('persona')
+		self.fields['estilista'].required = False
+		self.fields['hora_inicio'].input_formats = [
+			'%H:%M', '%H:%M:%S', '%I:%M %p'
+		]
+		self.fields['hora_solicitada'].input_formats = self.fields['hora_inicio'].input_formats
+		self.fields['fecha_solicitada'].required = False
+		self.fields['hora_solicitada'].required = False
+		for field in self.fields.values():
+			field.widget.attrs.setdefault(
+				'class',
+				'w-full px-4 py-2.5 rounded-xl border border-rose-100 bg-white text-sm',
+			)
+
+	def clean_fecha(self):
+		fecha = self.cleaned_data['fecha']
+		if fecha < timezone.localdate():
+			raise ValidationError('La fecha de la cita no puede estar en el pasado.')
+		return fecha
+
+	def clean(self):
+		cleaned_data = super().clean()
+		estilista = cleaned_data.get('estilista')
+		servicio = cleaned_data.get('servicio')
+		fecha = cleaned_data.get('fecha')
+		hora_inicio = cleaned_data.get('hora_inicio')
+		if servicio and fecha and hora_inicio:
+			if fecha == timezone.localdate() and hora_inicio <= timezone.localtime().time():
+				self.add_error(
+					'hora_inicio',
+					ValidationError('La hora seleccionada ya pasó.'),
+				)
+			else:
+				candidatas = self.fields['estilista'].queryset
+				if estilista:
+					candidatas = candidatas.filter(pk=estilista.pk)
+				estilista_disponible = next(
+					(
+						candidata for candidata in candidatas
+						if _estilista_disponible(
+							candidata, fecha, hora_inicio, servicio
+						)
+					),
+					None,
+				)
+				if estilista_disponible is None:
+					self.add_error(
+						'hora_inicio',
+						ValidationError('No hay estilistas disponibles en ese horario.'),
+					)
+				else:
+					cleaned_data['estilista'] = estilista_disponible
+		if not cleaned_data.get('fecha_solicitada'):
+			cleaned_data['fecha_solicitada'] = cleaned_data.get('fecha')
+		if not cleaned_data.get('hora_solicitada'):
+			cleaned_data['hora_solicitada'] = cleaned_data.get('hora_inicio')
+		return cleaned_data

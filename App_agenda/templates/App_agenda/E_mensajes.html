@@ -1,0 +1,44 @@
+{% extends 'App_usuarios/E_base.html' %}
+
+{% block title %}Mensajes Estilista - Leidy Make Up{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+      <h2 class="text-2xl font-bold text-gray-900">Mensajes</h2>
+    </div>
+
+    <form method="get" class="mb-4">
+      <label for="contacto" class="mb-1 block text-xs font-semibold text-gray-700">Clienta</label>
+      <select id="contacto" name="con" onchange="this.form.submit()" class="w-full rounded-xl border border-rose-100 bg-white p-3 text-sm">
+        <option value="">Selecciona una clienta</option>
+        {% for item in contactos %}
+          <option value="{{ item.pk }}" {% if contacto.pk == item.pk %}selected{% endif %}>{{ item.persona.get_full_name }}</option>
+        {% endfor %}
+      </select>
+    </form>
+    {% if contacto %}
+      <section class="rounded-2xl border border-rose-100 bg-white p-5 shadow-sm">
+        <h3 class="mb-4 font-bold text-gray-900">{{ contacto.persona.get_full_name }}</h3>
+        <div class="mb-5 space-y-3">
+          {% for item in mensajes %}
+            <article class="max-w-lg rounded-xl p-3 {% if item.remitente_id == request.user.id %}ml-auto bg-rose-100{% else %}bg-gray-100{% endif %}">
+              <p class="text-xs font-semibold text-gray-700">{{ item.remitente.get_full_name|default:item.remitente.username }}</p>
+              <p class="mt-1 whitespace-pre-wrap text-sm text-gray-800">{{ item.contenido }}</p>
+              <time class="mt-1 block text-right text-[10px] text-gray-500">{{ item.creado_en|date:"d/m/Y H:i" }}</time>
+            </article>
+          {% empty %}
+            <p class="text-sm text-gray-500">Aún no hay mensajes en esta conversación.</p>
+          {% endfor %}
+        </div>
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="destinatario_id" value="{{ contacto.pk }}">
+          <label for="contenido" class="mb-1 block text-xs font-semibold text-gray-700">Mensaje</label>
+          <textarea id="contenido" name="contenido" maxlength="2000" required class="w-full rounded-xl border border-gray-200 p-3 text-sm" rows="3"></textarea>
+          <button type="submit" class="mt-2 rounded-xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white">Enviar</button>
+        </form>
+      </section>
+    {% else %}
+      <p class="rounded-xl border border-rose-100 bg-white p-5 text-sm text-gray-500">Las conversaciones con clientas aparecerán aquí cuando tengan citas registradas.</p>
+    {% endif %}
+{% endblock %}

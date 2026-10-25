@@ -1,0 +1,94 @@
+{% extends 'App_usuarios/C_base.html' %}
+
+{% block title %}Mis citas - Leidy Make Up{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+
+  <!-- CABECERA DE LA PÁGINA -->
+  <div>
+    <h1 class="text-2xl font-bold text-gray-900">Mis citas</h1>
+    <p class="text-xs text-gray-400 mt-1">Estas son tus solicitudes y citas en Leidy Make Up.</p>
+  </div>
+
+  <!-- LISTA DE TARJETAS DE CITAS -->
+  <div class="space-y-4">
+    {% for cita in citas %}
+    <div class="bg-white rounded-2xl p-6 border border-rose-100/70 shadow-sm relative hover:shadow-md transition-all">
+      
+      <!-- BADGE DE ESTADO (PENDIENTE / CONFIRMADA) -->
+      <div class="absolute top-6 right-6">
+        {% if cita.estado == 'PENDIENTE' or cita.estado == 'Pendiente' %}
+          <span class="px-3 py-1 rounded-full text-[11px] font-semibold bg-amber-100/70 text-amber-700 border border-amber-200/50">
+            Pendiente
+          </span>
+        {% elif cita.estado == 'CONFIRMADA' or cita.estado == 'Confirmada' %}
+          <span class="px-3 py-1 rounded-full text-[11px] font-semibold bg-emerald-100/70 text-emerald-700 border border-emerald-200/50">
+            Confirmada
+          </span>
+        {% else %}
+          <span class="px-3 py-1 rounded-full text-[11px] font-semibold bg-gray-100 text-gray-600 border border-gray-200">
+            {{ cita.estado }}
+          </span>
+        {% endif %}
+      </div>
+
+      <!-- TÍTULO DEL SERVICIO -->
+      <div class="flex items-center gap-2 text-rose-600 mb-1">
+        <i data-lucide="sparkles" class="w-4 h-4"></i>
+        <h3 class="text-sm font-bold text-gray-900">{{ cita.servicio.nombre }}</h3>
+      </div>
+
+      <!-- FECHA Y HORA DE LA CITA -->
+      <div class="space-y-1 my-3">
+        <p class="text-xs font-medium text-gray-500">
+          {{ cita.fecha|date:"l, d \d\e F \d\e Y" }}
+        </p>
+        <p class="text-xs text-gray-400 flex items-center gap-2">
+          <span class="flex items-center gap-1">
+            <i data-lucide="clock" class="w-3.5 h-3.5 text-gray-400"></i>
+            {{ cita.hora_inicio|time:"H:i A" }} - {{ cita.hora_fin|time:"H:i A" }}
+          </span>
+          <span>·</span>
+          <span>{{ cita.servicio.duracion|default:"60" }} min</span>
+        </p>
+        
+        {% if cita.estado == 'PENDIENTE' or cita.estado == 'Pendiente' %}
+          <p class="text-[11px] text-amber-600 font-medium pt-1">Pendiente de confirmación</p>
+        {% endif %}
+      </div>
+
+      <!-- BOTONES DE ACCIÓN (MENSAJE Y CANCELAR) -->
+      <div class="flex items-center gap-3 pt-3 border-t border-gray-50">
+        <!-- Ir a Mensajes de esta cita -->
+        <a href="{% url 'App_agenda:c_mensajes' %}" class="px-4 py-2 bg-white border border-gray-200 rounded-xl text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-all flex items-center gap-1.5 shadow-sm">
+          <i data-lucide="message-square" class="w-3.5 h-3.5 text-gray-500"></i> Mensaje
+        </a>
+
+        <!-- Modal o Formulario de Cancelación -->
+        <form method="post" action="{% url 'App_agenda:cancelar_cita' cita.id %}" onsubmit="return confirm('¿Estás seguro de cancelar esta cita?');">
+          {% csrf_token %}
+          <button type="submit" class="px-4 py-2 bg-white border border-rose-100 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-all flex items-center gap-1.5 shadow-sm">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5 text-rose-500"></i> Cancelar
+          </button>
+        </form>
+      </div>
+
+    </div>
+    {% empty %}
+    <!-- VISTA SI NO HAY CITAS REGISTRADAS -->
+    <div class="bg-white rounded-2xl p-12 text-center border border-rose-100 shadow-sm max-w-lg mx-auto">
+      <div class="w-12 h-12 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center mx-auto mb-3">
+        <i data-lucide="calendar-x" class="w-6 h-6"></i>
+      </div>
+      <h3 class="text-sm font-bold text-gray-800">Todavía no tienes citas</h3>
+      <p class="text-xs text-gray-400 mt-1 mb-6">Puedes reservar un servicio cuando quieras desde nuestro catálogo.</p>
+      <a href="{% url 'App_agenda:c_reservar' %}" class="px-5 py-2.5 bg-rose-600 text-white rounded-xl text-xs font-bold shadow-md shadow-rose-200 hover:bg-rose-700 transition-all inline-flex items-center gap-2">
+        <i data-lucide="calendar-plus" class="w-4 h-4"></i> Reservar cita
+      </a>
+    </div>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}
